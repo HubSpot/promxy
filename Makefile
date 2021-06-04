@@ -26,6 +26,7 @@ imports:
 test:
 	GO111MODULE=on $(GO) test -mod=vendor -tags netgo,builtinassets -v ./...
 
+.PHONY: release
 release:
 	./build.bash github.com/jacksontj/promxy/cmd/promxy $(BUILD)
 	./build.bash github.com/jacksontj/promxy/cmd/remote_write_exporter $(BUILD)
