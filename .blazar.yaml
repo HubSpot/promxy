@@ -27,7 +27,7 @@ before:
         export PATH=$GOPATH/bin:$PATH
         git clone git@github.com:HubSpot/promxy.git $GOPATH/src/github.com/jacksontj/promxy
         cd $GOPATH/src/github.com/jacksontj/promxy
-        git checkout 62
+        git checkout hubs-dev
         # Avoid building remote_write_exporter
         sed -i -e 's|.*remote_write_exporter.*||g' Makefile
         echo "Modifying build.bash"
