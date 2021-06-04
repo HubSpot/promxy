@@ -3,6 +3,8 @@ package promclient
 import (
 	"context"
 	"encoding/json"
+	parserhelper2 "github.com/jacksontj/promxy/pkg/parserhelper"
+	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 	"time"
@@ -276,7 +278,16 @@ func (m *MultiAPI) Query(ctx context.Context, query string, ts time.Time) (model
 		err      error
 		ls       model.Fingerprint
 	}
+	
+	matchers := parserhelper2.ExtractSelectors(query)
 
+	logrus.Info("Printing selectors")
+	for _, matcher := range matchers {
+		for _, m := range matcher {
+			logrus.Info("Name", m.Name, "Value", m.Value)
+		}
+	}
+	
 	resultChans := make([]chan chanResult, len(m.apis))
 	outstandingRequests := make(map[model.Fingerprint]int) // fingerprint -> outstanding
 

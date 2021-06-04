@@ -32,8 +32,8 @@ release:
 	./build.bash github.com/jacksontj/promxy/cmd/remote_write_exporter $(BUILD)
 
 testlocal-build:
-	docker build -t 127.0.0.1:32000/promxy:latest .
-	docker push 127.0.0.1:32000/promxy:latest
+	docker build -t promxy-hubs:latest .
+	docker push promxy-hubs:latest
 
 .PHONY: vendor
 vendor:
