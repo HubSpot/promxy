@@ -1,0 +1,44 @@
+enabled: true
+
+buildpack:
+  host: git.hubteam.com
+  organization: HubSpot
+  repository: Blazar-Buildpack-Docker
+  branch: master
+
+buildResources:
+  cpus: 1
+  memoryMb: 2048
+
+before:
+  - name: installGo
+    description: Install the correct version of golang
+    commands:
+      - yum install -y --exclude=golang-hs golang-1.15.2-1.el6
+
+  - name: buildPromxy
+    description: Building promxy
+    commands:
+      - |
+        echo -e "\n\n\n\n"
+        set -ex
+        origdir=$PWD
+        export GOPATH=$PWD/gopath
+        export PATH=$GOPATH/bin:$PATH
+        git clone git@github.com:HubSpot/promxy.git $GOPATH/src/github.com/jacksontj/promxy
+        cd $GOPATH/src/github.com/jacksontj/promxy
+        git checkout htross-dev
+        # Avoid building remote_write_exporter
+        sed -i -e 's|.*remote_write_exporter.*||g' Makefile
+        echo "Modifying build.bash"
+        # Don't bother building windows/darwin packages
+        sed -i -e 's|platforms=.*|platforms=(linux/amd64)|g' build.bash
+        # For some reason its bash package name interpretation is busted on CentOS 6 bash?
+        # IDK, since we don't use remote_write_exporter, just hardcode the parsed package name stuff
+        sed -i -e 's|package_name=.*|package_name=promxy|g' build.bash
+        echo "Modified build.bash:"
+        cat build.bash
+        echo -e "\n\n\n\n"
+        make release
+        echo "Make exited with code $?"
+        mv build/promxy-*-dirty-linux-amd64 $origdir/promxy.bin
