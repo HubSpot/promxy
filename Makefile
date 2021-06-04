@@ -33,7 +33,6 @@ release:
 
 testlocal-build:
 	docker build -t promxy-hubs:latest .
-	docker push promxy-hubs:latest
 
 .PHONY: vendor
 vendor:
