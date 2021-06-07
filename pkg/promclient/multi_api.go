@@ -588,20 +588,19 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 }
 
 func logQuery(query string) {
-	logrus.Info("START WITH LOG QUERY", query)
-
 	selectors, err := parsehelper.ExtractSelectors(query)
 
 	if err != nil {
 		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
 	}
 
+	logrus.Info("Number of sets of selectors", len(selectors))
 	for _, sel := range selectors {
-		logrus.Info("Logging selectors", sel)
+		logrus.Info("Number of selectors in set", len(sel))
 
 		for _, s := range sel {
-			logrus.Info("Logging selector", s)
-			logrus.Info("Logging SelectorName", s.Name)
+			if s.Name == "__name__":
+				logrus.Info("MetricName", s.Value)
 		}
 	}
 
