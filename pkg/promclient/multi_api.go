@@ -2,10 +2,12 @@ package promclient
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"github.com/jacksontj/promxy/pkg/parsehelper"
 	"github.com/sirupsen/logrus"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -270,9 +272,24 @@ func (m *MultiAPI) LabelNames(ctx context.Context) ([]string, api.Warnings, erro
 
 // Query performs a query for the given time.
 func (m *MultiAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, api.Warnings, error) {
-	logQuery(query)
+	metricNames := extractMetricNames(query)
+	set := map[int]bool{}
+
+	for _, name := range metricNames {
+		mod := sum64(md5.Sum([]byte(name))) % 1000
+		set[int(mod)] = true
+	}
+
+	queryStr := ""
+	for mod, _ := range set {
+		queryStr = queryStr + strconv.Itoa(mod) + "|"
+	}
+
+	query = query + "?tenant=" + queryStr
+
 	childContext, childContextCancel := context.WithCancel(ctx)
 	defer childContextCancel()
+
 
 	type chanResult struct {
 		v        model.Value
@@ -351,7 +368,21 @@ func (m *MultiAPI) Query(ctx context.Context, query string, ts time.Time) (model
 
 // QueryRange performs a query for the given range.
 func (m *MultiAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, api.Warnings, error) {
-	logQuery(query)
+	metricNames := extractMetricNames(query)
+	set := map[int]bool{}
+
+	for _, name := range metricNames {
+		mod := sum64(md5.Sum([]byte(name))) % 1000
+		set[int(mod)] = true
+	}
+
+	queryStr := ""
+	for mod, _ := range set {
+		queryStr = queryStr + strconv.Itoa(mod) + "|"
+	}
+
+	query = query + "?tenant=" + queryStr
+
 	childContext, childContextCancel := context.WithCancel(ctx)
 	defer childContextCancel()
 
@@ -587,23 +618,33 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 	return result, warnings.Warnings(), nil
 }
 
-func logQuery(query string) {
+func extractMetricNames(query string) []string {
+	var metricNames = []string
 	selectors, err := parsehelper.ExtractSelectors(query)
 
 	if err != nil {
 		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
 	}
 
-	logrus.Info("Number of sets of selectors", len(selectors))
 	for _, sel := range selectors {
-		logrus.Info("Number of selectors in set", len(sel))
-
 		for _, s := range sel {
 			if s.Name == "__name__" {
-				logrus.Info("MetricName", s.Value)
+				metricNames = append(metricNames, s.Value)
 			}
 		}
 	}
 
-	logrus.Info("DONE WITH LOG QUERY")
+	return metricNames
+}
+
+
+func sum64(hash [md5.Size]byte) uint64 {
+	var s uint64
+
+	for i, b := range hash {
+		shift := uint64((md5.Size - i - 1) * 8)
+
+		s |= uint64(b) << shift
+	}
+	return s
 }
