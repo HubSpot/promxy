@@ -619,7 +619,7 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 }
 
 func extractMetricNames(query string) []string {
-	var metricNames = []string
+	metricNames := make([]string, 0)
 	selectors, err := parsehelper.ExtractSelectors(query)
 
 	if err != nil {
