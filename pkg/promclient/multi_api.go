@@ -589,14 +589,11 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 func logQuery(query string) {
 	logrus.Info("START WITH LOG QUERY", query)
 
-	selector, err := promql.ParseMetricSelector(query)
+	expr, err := promql.ParseExpr(query)
 	if err != nil {
 		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
 	}
-
-	for m := range selector {
-		logrus.Info("SELECTOR", m)
-	}
+	logrus.Info("EXPR", expr)
 
 	logrus.Info("DONE WITH LOG QUERY")
 }
