@@ -599,8 +599,9 @@ func logQuery(query string) {
 		logrus.Info("Number of selectors in set", len(sel))
 
 		for _, s := range sel {
-			if s.Name == "__name__":
+			if s.Name == "__name__" {
 				logrus.Info("MetricName", s.Value)
+			}
 		}
 	}
 
