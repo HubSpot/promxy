@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/pkg/labels"
 "github.com/prometheus/prometheus/promql"
+	"github.com/sirupsen/logrus"
 )
 
 type inspector func(promql.Node, []promql.Node) error
@@ -97,10 +98,11 @@ func children(node promql.Node) []promql.Node {
 		return []promql.Node{n.Expr}
 	case *promql.UnaryExpr:
 		return []promql.Node{n.Expr}
-	case *promql.NumberLiteral, *promql.StringLiteral, *promql.VectorSelector:
+	case *promql.MatrixSelector, *promql.NumberLiteral, *promql.StringLiteral, *promql.VectorSelector:
 		// nothing to do
 		return []promql.Node{}
 	default:
+		logrus.Error("promql.Children: unhandled node type %T", node)
 		panic(errors.Errorf("promql.Children: unhandled node type %T", node))
 	}
 }
