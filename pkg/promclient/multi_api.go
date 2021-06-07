@@ -3,6 +3,7 @@ package promclient
 import (
 	"context"
 	"encoding/json"
+	"github.com/jacksontj/promxy/pkg/parsehelper"
 	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
@@ -589,11 +590,15 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 func logQuery(query string) {
 	logrus.Info("START WITH LOG QUERY", query)
 
-	expr, err := promql.ParseExpr(query)
+	selectors, err := parsehelper.ExtractSelectors(query)
+
 	if err != nil {
 		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
 	}
-	logrus.Info("EXPR", expr)
+
+	for _, s := range selectors {
+		logrus.Info("Logging selector", s)
+	}
 
 	logrus.Info("DONE WITH LOG QUERY")
 }
