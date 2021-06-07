@@ -596,8 +596,13 @@ func logQuery(query string) {
 		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
 	}
 
-	for _, s := range selectors {
-		logrus.Info("Logging selector", s)
+	for _, sel := range selectors {
+		logrus.Info("Logging selectors", sel)
+
+		for _, s := range sel {
+			logrus.Info("Logging selector", s)
+			logrus.Info("Logging SelectorName", s.Name)
+		}
 	}
 
 	logrus.Info("DONE WITH LOG QUERY")

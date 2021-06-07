@@ -98,7 +98,16 @@ func children(node promql.Node) []promql.Node {
 		return []promql.Node{n.Expr}
 	case *promql.UnaryExpr:
 		return []promql.Node{n.Expr}
-	case *promql.MatrixSelector, *promql.NumberLiteral, *promql.StringLiteral, *promql.VectorSelector:
+	case *promql.MatrixSelector:
+		vs := promql.VectorSelector{
+			Name:          n.Name,
+			Offset:        n.Offset,
+			LabelMatchers: n.LabelMatchers,
+			LookbackDelta: 1000,
+		}
+		
+		return []promql.Node{&vs}
+	case *promql.NumberLiteral, *promql.StringLiteral, *promql.VectorSelector:
 		// nothing to do
 		return []promql.Node{}
 	default:
