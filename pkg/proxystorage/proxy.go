@@ -98,8 +98,10 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 	}
 	for i, sgCfg := range c.ServerGroups {
 		tmp := servergroup.New()
-		logrus.Info("Logging server group", tmp)
+		tmp.State()
 		logrus.Info("Logging lables", tmp.Cfg.Labels)
+		logrus.Info("Targets", tmp.State().Targets)
+		logrus.Info("shards", tmp.State().Shard)
 
 		if err := tmp.ApplyConfig(sgCfg); err != nil {
 			failed = true

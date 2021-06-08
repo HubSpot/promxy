@@ -70,6 +70,7 @@ func New() *ServerGroup {
 type ServerGroupState struct {
 	// Targets is the list of target URLs for this discovery round
 	Targets   []string
+	Shard int
 	apiClient promclient.API
 }
 
@@ -225,6 +226,7 @@ SYNC_LOOP:
 		logrus.Debugf("Updating targets from discovery manager: %v", targets)
 		newState := &ServerGroupState{
 			Targets:   targets,
+			Shard: i,
 			apiClient: promclient.NewMultiAPI(apiClients, s.Cfg.GetAntiAffinity(), apiClientMetricFunc, 1),
 		}
 
