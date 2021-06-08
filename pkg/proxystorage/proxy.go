@@ -100,9 +100,16 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 		logrus.Info("Before targets")
 		tmp := servergroup.New()
 		logrus.Info("Before state")
-		tmp.State()
-		logrus.Info("Targets", tmp.State().Targets)
-		logrus.Info("shards", tmp.State().Shard)
+		x := tmp.State()
+
+		if x == nil {
+			logrus.Info("State is null")
+		} else {
+			logrus.Info("State is not null")
+			logrus.Info("Targets", tmp.State().Targets)
+			logrus.Info("shards", tmp.State().Shard)
+		}
+
 		logrus.Info("After targets")
 
 		if err := tmp.ApplyConfig(sgCfg); err != nil {
