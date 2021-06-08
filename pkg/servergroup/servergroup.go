@@ -106,10 +106,11 @@ SYNC_LOOP:
 		targets := make([]string, 0)
 		apiClients := make([]promclient.API, 0)
 
+		i := 0
 		for _, targetGroupList := range targetGroupMap {
 			for _, targetGroup := range targetGroupList {
 				for _, target := range targetGroup.Targets {
-					lbls := make([]labels.Label, 0, len(target)+len(targetGroup.Labels))
+					lbls := make([]labels.Label, 0, len(target)+len(targetGroup.Labels) + 1)
 
 					for ln, lv := range target {
 						lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
@@ -120,6 +121,11 @@ SYNC_LOOP:
 							lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
 						}
 					}
+
+					lbls = append(lbls, labels.Label{
+						Name:  "tenant",
+						Value: string(i),
+					})
 
 					lset := labels.New(lbls...)
 					logrus.Tracef("Potential target pre-relabel: %v", lset)
@@ -148,9 +154,10 @@ SYNC_LOOP:
 						panic(err) // TODO: shouldn't be possible? If this happens I guess we log and skip?
 					}
 
-					if len(s.Cfg.QueryParams) > 0 {
-						client = promclient.NewClientArgsWrap(client, s.Cfg.QueryParams)
-					}
+					m := make(map[string]string)
+					m["tenant"] = string(i)
+
+					client = promclient.NewClientArgsWrap(client, m)
 
 					var apiClient promclient.API
 					apiClient = &promclient.PromAPIV1{v1.NewAPI(client)}
@@ -206,6 +213,7 @@ SYNC_LOOP:
 					}
 
 					apiClients = append(apiClients, apiClient)
+					i++
 				}
 			}
 		}
