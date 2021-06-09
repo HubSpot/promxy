@@ -99,7 +99,6 @@ func (s *ServerGroup) Cancel() {
 
 // Sync updates the targets from our discovery manager
 func (s *ServerGroup) Sync() {
-	logrus.Info("ARE WE HERE IN SYNC")
 	syncCh := s.targetManager.SyncCh()
 
 SYNC_LOOP:
