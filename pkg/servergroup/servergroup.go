@@ -113,6 +113,8 @@ SYNC_LOOP:
 		for _, targetGroupList := range targetGroupMap {
 			for _, targetGroup := range targetGroupList {
 				for _, target := range targetGroup.Targets {
+					logrus.Info("Here with target", target)
+
 					lbls := make([]labels.Label, 0, len(target)+len(targetGroup.Labels) + 1)
 
 					for ln, lv := range target {
