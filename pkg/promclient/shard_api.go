@@ -58,7 +58,7 @@ func (m *ShardAPI) LabelNames(ctx context.Context) ([]string, api.Warnings, erro
 
 // Query performs a query for the given time.
 func (m *ShardAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, api.Warnings, error) {
-	return m.defaultAPI.Query(ctx, query, ts
+	return m.defaultAPI.Query(ctx, query, ts)
 }
 
 // QueryRange performs a query for the given range.
