@@ -20,8 +20,8 @@ import (
 // NewShardAPI returns a ShardAPI
 func NewShardAPI(apiShards map[int]API, defaultAPI API, antiAffinity model.Time, metricFunc MultiAPIMetricFunc) *ShardAPI {
 	logrus.Info("Printing shards")
-	for i, _ := range apiShards {
-		logrus.Info("Shard", i)
+	for i, ap := range apiShards {
+		logrus.Info("Shard", i, ap)
 	}
 
 	return &ShardAPI{
@@ -93,18 +93,18 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	outstandingRequests := make(map[model.Fingerprint]int) // fingerprint -> outstanding
 	apiFingerprints := createFingerprints(apis)
 
+	logrus.Info("Printing apis", apis)
+
 	for i, ap := range apis {
 		resultChans[i] = make(chan chanResult, 1)
 		outstandingRequests[apiFingerprints[i]]++
 		go func(i int, retChan chan chanResult, ap API, query string, r v1.Range) {
 			start := time.Now()
 
-			if childContext == nil {
-				logrus.Info("Null child context")
-			}
-
+			logrus.Info(childContext)
 			logrus.Info(query)
 			logrus.Info(r)
+			logrus.Info(ap)
 
 			result, w, err := ap.QueryRange(childContext, query, r)
 			took := time.Since(start)
