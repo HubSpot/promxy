@@ -227,6 +227,12 @@ SYNC_LOOP:
 			serverGroupSummary.WithLabelValues(targets[i], api, status).Observe(took)
 		}
 
+		if len(apiClients) != 1 {
+			logrus.Error("Not right number of api clients", len(apiClients))
+			panic(errors.Errorf("Not right number of api clients %v", len(apiClients)))
+			return
+		}
+
 		logrus.Debugf("Updating targets from discovery manager: %v", targets)
 		newState := &ServerGroupState{
 			Targets:   targets,

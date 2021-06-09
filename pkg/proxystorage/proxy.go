@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -88,38 +89,46 @@ func (p *ProxyStorage) GetState() *proxyStorageState {
 // ApplyConfig updates the current state of this ProxyStorage
 func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 	oldState := p.GetState() // Fetch the old state
-
 	failed := false
+	apiMap := make(map[int]promclient.API, 1000)
 
-	apis := make([]promclient.API, len(c.ServerGroups))
 	newState := &proxyStorageState{
-		sgs: make([]*servergroup.ServerGroup, len(c.ServerGroups)),
+		sgs: make([]*servergroup.ServerGroup, 1001),
 		cfg: &c.PromxyConfig,
 	}
-	for i, sgCfg := range c.ServerGroups {
+
+	if len(c.ServerGroups) != 1 {
+		newState.Cancel(nil)
+		return fmt.Errorf("More than 1 server group included.")
+	}
+
+	sgCfg := c.ServerGroups[0]
+	for j := 0; j < 1000; j++ {
+		params := make(map[string]string, 1)
+		params["tenant"] = strconv.Itoa(j)
+		sgCfg.QueryParams = params
+
 		logrus.Info("Before targets")
 		tmp := servergroup.New()
-		logrus.Info("Before state")
-		x := tmp.State()
-
-		if x == nil {
-			logrus.Info("State is null")
-		} else {
-			logrus.Info("State is not null")
-			logrus.Info("Targets", tmp.State().Targets)
-			logrus.Info("shards", tmp.State().Shard)
-		}
-
-		logrus.Info("After targets")
 
 		if err := tmp.ApplyConfig(sgCfg); err != nil {
 			failed = true
 			logrus.Errorf("Error applying config to server group: %s", err)
 		}
-		newState.sgs[i] = tmp
-		apis[i] = tmp
+		newState.sgs[j] = tmp
+		apiMap[j] = tmp
 	}
-	newState.client = promclient.NewTimeTruncate(promclient.NewMultiAPI(apis, model.TimeFromUnix(0), nil, len(apis)))
+
+	//Add default tenant
+	def := servergroup.New()
+	if err := def.ApplyConfig(sgCfg); err != nil {
+		failed = true
+		logrus.Errorf("Error applying config to server group: %s", err)
+	}
+	newState.sgs[1000] = def
+
+
+	newState.client = promclient.NewTimeTruncate(promclient.NewShardAPI(apiMap, def, model.TimeFromUnix(0), nil))
 
 	if failed {
 		newState.Cancel(nil)
