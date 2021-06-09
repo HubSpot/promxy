@@ -70,7 +70,6 @@ func New() *ServerGroup {
 type ServerGroupState struct {
 	// Targets is the list of target URLs for this discovery round
 	Targets   []string
-	Shard int
 	apiClient promclient.API
 }
 
@@ -102,19 +101,15 @@ func (s *ServerGroup) Sync() {
 	syncCh := s.targetManager.SyncCh()
 
 SYNC_LOOP:
-	logrus.Info("ARE WE HERE IN SYNC LOOP")
 	for targetGroupMap := range syncCh {
 		logrus.Debug("Updating targets from discovery manager")
 		targets := make([]string, 0)
 		apiClients := make([]promclient.API, 0)
 
-		i := 0
 		for _, targetGroupList := range targetGroupMap {
 			for _, targetGroup := range targetGroupList {
 				for _, target := range targetGroup.Targets {
-					logrus.Info("Here with target", target)
-
-					lbls := make([]labels.Label, 0, len(target)+len(targetGroup.Labels) + 1)
+					lbls := make([]labels.Label, 0, len(target)+len(targetGroup.Labels))
 
 					for ln, lv := range target {
 						lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
@@ -125,11 +120,6 @@ SYNC_LOOP:
 							lbls = append(lbls, labels.Label{Name: string(ln), Value: string(lv)})
 						}
 					}
-
-					lbls = append(lbls, labels.Label{
-						Name:  "tenant",
-						Value: string(i),
-					})
 
 					lset := labels.New(lbls...)
 					logrus.Tracef("Potential target pre-relabel: %v", lset)
@@ -158,10 +148,9 @@ SYNC_LOOP:
 						panic(err) // TODO: shouldn't be possible? If this happens I guess we log and skip?
 					}
 
-					m := make(map[string]string)
-					m["tenant"] = string(i)
-
-					client = promclient.NewClientArgsWrap(client, m)
+					if len(s.Cfg.QueryParams) > 0 {
+						client = promclient.NewClientArgsWrap(client, s.Cfg.QueryParams)
+					}
 
 					var apiClient promclient.API
 					apiClient = &promclient.PromAPIV1{v1.NewAPI(client)}
@@ -217,7 +206,6 @@ SYNC_LOOP:
 					}
 
 					apiClients = append(apiClients, apiClient)
-					i++
 				}
 			}
 		}
@@ -226,16 +214,9 @@ SYNC_LOOP:
 			serverGroupSummary.WithLabelValues(targets[i], api, status).Observe(took)
 		}
 
-		if len(apiClients) != 1 {
-			logrus.Error("Not right number of api clients", len(apiClients))
-			panic(errors.Errorf("Not right number of api clients %v", len(apiClients)))
-			return
-		}
-
 		logrus.Debugf("Updating targets from discovery manager: %v", targets)
 		newState := &ServerGroupState{
 			Targets:   targets,
-			Shard: i,
 			apiClient: promclient.NewMultiAPI(apiClients, s.Cfg.GetAntiAffinity(), apiClientMetricFunc, 1),
 		}
 
