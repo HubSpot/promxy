@@ -104,7 +104,7 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 
 	sgCfg := c.ServerGroups[0]
 	for j := 0; j < 1000; j++ {
-		params := make(map[string]string, 1)
+		params := make(map[string]string)
 		params["tenant"] = strconv.Itoa(j)
 		sgCfg.QueryParams = params
 
@@ -117,6 +117,8 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 		}
 		newState.sgs[j] = tmp
 		apiMap[j] = tmp
+
+		logrus.Info(apiMap[j])
 	}
 
 	//Add default tenant
