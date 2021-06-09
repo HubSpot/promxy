@@ -85,7 +85,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	apis := make([]API, requiredCount)
 
 	for index, _ := range set {
-		logrus.Info("Calling this API", m.apiShards[index])
+		logrus.Info("Calling this API", index)
 		apis = append(apis, m.apiShards[index])
 	}
 
@@ -93,12 +93,20 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	outstandingRequests := make(map[model.Fingerprint]int) // fingerprint -> outstanding
 	apiFingerprints := createFingerprints(apis)
 
-	for i, api := range apis {
+	for i, ap := range apis {
 		resultChans[i] = make(chan chanResult, 1)
 		outstandingRequests[apiFingerprints[i]]++
-		go func(i int, retChan chan chanResult, api API, query string, r v1.Range) {
+		go func(i int, retChan chan chanResult, ap API, query string, r v1.Range) {
 			start := time.Now()
-			result, w, err := api.QueryRange(childContext, query, r)
+
+			if childContext == nil {
+				logrus.Info("Null child context")
+			}
+
+			logrus.Info(query)
+			logrus.Info(r)
+
+			result, w, err := ap.QueryRange(childContext, query, r)
 			took := time.Since(start)
 			if err != nil {
 				m.recordMetric(i, "query_range", "error", took.Seconds())
@@ -111,7 +119,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 				err:      NormalizePromError(err),
 				ls:       apiFingerprints[i],
 			}
-		}(i, resultChans[i], api, query, r)
+		}(i, resultChans[i], ap, query, r)
 	}
 
 	// Wait for results as we get them

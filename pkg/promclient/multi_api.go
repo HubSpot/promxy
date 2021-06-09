@@ -3,7 +3,6 @@ package promclient
 import (
 	"context"
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 	"time"
@@ -269,7 +268,6 @@ func (m *MultiAPI) LabelNames(ctx context.Context) ([]string, api.Warnings, erro
 
 // Query performs a query for the given time.
 func (m *MultiAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, api.Warnings, error) {
-	logQuery(query)
 	childContext, childContextCancel := context.WithCancel(ctx)
 	defer childContextCancel()
 
@@ -350,7 +348,6 @@ func (m *MultiAPI) Query(ctx context.Context, query string, ts time.Time) (model
 
 // QueryRange performs a query for the given range.
 func (m *MultiAPI) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, api.Warnings, error) {
-	logQuery(query)
 	childContext, childContextCancel := context.WithCancel(ctx)
 	defer childContextCancel()
 
@@ -584,19 +581,4 @@ func (m *MultiAPI) GetValue(ctx context.Context, start, end time.Time, matchers 
 	}
 
 	return result, warnings.Warnings(), nil
-}
-
-func logQuery(query string) {
-	logrus.Info("START WITH LOG QUERY", query)
-
-	selector, err := promql.ParseMetricSelector(query)
-	if err != nil {
-		logrus.Error("ERROR for PARSE METRIC SELECTOR for query", query, err)
-	}
-
-	for m := range selector {
-		logrus.Info("SELECTOR", m)
-	}
-
-	logrus.Info("DONE WITH LOG QUERY")
 }
