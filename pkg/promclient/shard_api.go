@@ -19,11 +19,6 @@ import (
 
 // NewShardAPI returns a ShardAPI
 func NewShardAPI(apiShards map[int]API, defaultAPI API, antiAffinity model.Time, metricFunc MultiAPIMetricFunc) *ShardAPI {
-	logrus.Info("Printing shards")
-	for i, ap := range apiShards {
-		logrus.Info("Shard", i, ap)
-	}
-
 	return &ShardAPI{
 		apiShards:       apiShards,
 		defaultAPI: 	defaultAPI,
@@ -86,6 +81,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 
 	for index, _ := range set {
 		logrus.Info("Calling this API", index)
+		logrus.Info("Api object", m.apiShards[index])
 		apis = append(apis, m.apiShards[index])
 	}
 
