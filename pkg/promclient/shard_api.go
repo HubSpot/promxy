@@ -77,7 +77,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	}
 
 	requiredCount := len(set)
-	apis := make([]API, requiredCount)
+	apis := make([]API, 0)
 
 	for index, _ := range set {
 		logrus.Info("Calling this API", index)
