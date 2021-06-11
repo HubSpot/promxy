@@ -53,7 +53,98 @@ func (m *ShardAPI) LabelNames(ctx context.Context) ([]string, api.Warnings, erro
 
 // Query performs a query for the given time.
 func (m *ShardAPI) Query(ctx context.Context, query string, ts time.Time) (model.Value, api.Warnings, error) {
-	return m.defaultAPI.Query(ctx, query, ts)
+	metricNames := extractMetricNames(query)
+	set := map[int]bool{}
+
+	for _, name := range metricNames {
+		mod := sum64(md5.Sum([]byte(name))) % 1000
+		set[int(mod)] = true
+	}
+
+	childContext, childContextCancel := context.WithCancel(ctx)
+	defer childContextCancel()
+
+	type chanResult struct {
+		v        model.Value
+		warnings api.Warnings
+		err      error
+		ls       model.Fingerprint
+	}
+
+	requiredCount := len(set)
+	apis := []API{}
+
+	for index, _ := range set {
+		apis = append(apis, m.apiShards[index])
+	}
+
+	resultChans := make([]chan chanResult, len(apis))
+	outstandingRequests := make(map[model.Fingerprint]int) // fingerprint -> outstanding
+	apiFingerprints := createFingerprints(apis)
+
+	for i, api := range apis {
+		resultChans[i] = make(chan chanResult, 1)
+		outstandingRequests[apiFingerprints[i]]++
+		go func(i int, retChan chan chanResult, api API, query string, ts time.Time) {
+			start := time.Now()
+			result, w, err := api.Query(childContext, query, ts)
+			took := time.Since(start)
+			if err != nil {
+				m.recordMetric(i, "query", "error", took.Seconds())
+			} else {
+				m.recordMetric(i, "query", "success", took.Seconds())
+			}
+			retChan <- chanResult{
+				v:        result,
+				warnings: w,
+				err:      NormalizePromError(err),
+				ls:       apiFingerprints[i],
+			}
+		}(i, resultChans[i], api, query, ts)
+	}
+
+	// Wait for results as we get them
+	var result model.Value
+	warnings := make(promhttputil.WarningSet)
+	var lastError error
+	successMap := make(map[model.Fingerprint]int) // fingerprint -> success
+	for i := 0; i < len(apis); i++ {
+		select {
+		case <-ctx.Done():
+			return nil, warnings.Warnings(), ctx.Err()
+
+		case ret := <-resultChans[i]:
+			warnings.AddWarnings(ret.warnings)
+			outstandingRequests[ret.ls]--
+			if ret.err != nil {
+				// If there aren't enough outstanding requests to possibly succeed, no reason to wait
+				if (outstandingRequests[ret.ls] + successMap[ret.ls]) < requiredCount {
+					return nil, warnings.Warnings(), ret.err
+				}
+				lastError = ret.err
+			} else {
+				successMap[ret.ls]++
+				if result == nil {
+					result = ret.v
+				} else {
+					var err error
+					result, err = promhttputil.MergeValues(m.antiAffinity, result, ret.v)
+					if err != nil {
+						return nil, warnings.Warnings(), err
+					}
+				}
+			}
+		}
+	}
+
+	// Verify that we hit the requiredCount for all of the buckets
+	for k := range outstandingRequests {
+		if successMap[k] < requiredCount {
+			return nil, warnings.Warnings(), errors.Wrap(lastError, "Unable to fetch from downstream servers")
+		}
+	}
+
+	return result, warnings.Warnings(), nil
 }
 
 // QueryRange performs a query for the given range.
@@ -77,11 +168,9 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	}
 
 	requiredCount := len(set)
-	apis := make([]API, 0)
+	apis := []API{}
 
 	for index, _ := range set {
-		logrus.Info("Calling this API", index)
-		logrus.Info("Api object", m.apiShards[index])
 		apis = append(apis, m.apiShards[index])
 	}
 
