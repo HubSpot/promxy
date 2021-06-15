@@ -154,6 +154,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 
 	for _, name := range metricNames {
 		mod := sum64(md5.Sum([]byte(name))) % 100
+		logrus.Info("MetricName", name, "Shard", mod)
 		set[int(mod)] = true
 	}
 
