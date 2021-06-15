@@ -90,10 +90,10 @@ func (p *ProxyStorage) GetState() *proxyStorageState {
 func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 	oldState := p.GetState() // Fetch the old state
 	failed := false
-	apiMap := make(map[int]promclient.API, 1000)
+	apiMap := make(map[int]promclient.API, 100)
 
 	newState := &proxyStorageState{
-		sgs: make([]*servergroup.ServerGroup, 1001),
+		sgs: make([]*servergroup.ServerGroup, 101),
 		cfg: &c.PromxyConfig,
 	}
 
@@ -103,7 +103,7 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 	}
 
 	sgCfg := c.ServerGroups[0]
-	for j := 0; j < 1000; j++ {
+	for j := 0; j < 100; j++ {
 		params := make(map[string]string)
 		params["tenant"] = strconv.Itoa(j)
 		sgCfg.QueryParams = params
@@ -127,7 +127,7 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 		failed = true
 		logrus.Errorf("Error applying config to server group: %s", err)
 	}
-	newState.sgs[1000] = def
+	newState.sgs[100] = def
 
 
 	newState.client = promclient.NewTimeTruncate(promclient.NewShardAPI(apiMap, def, model.TimeFromUnix(0), nil))

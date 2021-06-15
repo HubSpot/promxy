@@ -57,7 +57,7 @@ func (m *ShardAPI) Query(ctx context.Context, query string, ts time.Time) (model
 	set := map[int]bool{}
 
 	for _, name := range metricNames {
-		mod := sum64(md5.Sum([]byte(name))) % 1000
+		mod := sum64(md5.Sum([]byte(name))) % 100
 		set[int(mod)] = true
 	}
 
@@ -153,7 +153,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	set := map[int]bool{}
 
 	for _, name := range metricNames {
-		mod := sum64(md5.Sum([]byte(name))) % 1000
+		mod := sum64(md5.Sum([]byte(name))) % 100
 		set[int(mod)] = true
 	}
 
