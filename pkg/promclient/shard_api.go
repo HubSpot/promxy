@@ -179,9 +179,10 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 	outstandingRequests := make(map[model.Fingerprint]int) // fingerprint -> outstanding
 	apiFingerprints := createFingerprints(apis)
 
-	logrus.Info("Printing apis", apis)
+	logrus.Info("Printing apis", apis, len(apis))
 
 	for i, ap := range apis {
+		logrus.Info("Are we in api iteration")
 		resultChans[i] = make(chan chanResult, 1)
 		outstandingRequests[apiFingerprints[i]]++
 		go func(i int, retChan chan chanResult, ap API, query string, r v1.Range) {
@@ -195,8 +196,10 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 			result, w, err := ap.QueryRange(childContext, query, r)
 			took := time.Since(start)
 			if err != nil {
+				logrus.Error("Error during query", err)
 				m.recordMetric(i, "query_range", "error", took.Seconds())
 			} else {
+				logrus.Error("Query success", err)
 				m.recordMetric(i, "query_range", "success", took.Seconds())
 			}
 			retChan <- chanResult{
