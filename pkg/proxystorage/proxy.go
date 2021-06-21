@@ -103,11 +103,20 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 	}
 
 	sgCfg := c.ServerGroups[0]
+
+	logrus.Info("sgCFG", sgCfg)
+
 	for j := 0; j < 100; j++ {
 		newConf := new(servergroup.Config)
+		newConf.HTTPConfig = sgCfg.HTTPConfig
+		newConf.Labels = sgCfg.Labels
+		newConf.PathPrefix = sgCfg.PathPrefix
+
 		params := make(map[string]string)
 		params["tenant"] = strconv.Itoa(j)
 		newConf.QueryParams = params
+
+		logrus.Info("newConf", j, newConf)
 
 		logrus.Info("Before targets")
 		tmp := servergroup.New()
