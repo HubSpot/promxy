@@ -199,7 +199,7 @@ func (m *ShardAPI) QueryRange(ctx context.Context, query string, r v1.Range) (mo
 				logrus.Error("Error during query", err)
 				m.recordMetric(i, "query_range", "error", took.Seconds())
 			} else {
-				logrus.Error("Query success", err)
+				logrus.Info("Query success", err)
 				m.recordMetric(i, "query_range", "success", took.Seconds())
 			}
 			retChan <- chanResult{

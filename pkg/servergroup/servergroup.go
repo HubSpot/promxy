@@ -149,6 +149,7 @@ SYNC_LOOP:
 					}
 
 					if len(s.Cfg.QueryParams) > 0 {
+						logrus.Info("Query Params", s.Cfg.QueryParams)
 						client = promclient.NewClientArgsWrap(client, s.Cfg.QueryParams)
 					}
 
