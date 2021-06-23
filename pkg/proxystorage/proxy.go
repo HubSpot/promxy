@@ -113,6 +113,9 @@ func (p *ProxyStorage) ApplyConfig(c *proxyconfig.Config) error {
 		newConf.PathPrefix = sgCfg.PathPrefix
 		newConf.Timeout = sgCfg.Timeout
 		newConf.AntiAffinity = sgCfg.AntiAffinity
+		newConf.RelabelConfigs = sgCfg.RelabelConfigs
+		newConf.Hosts = sgCfg.Hosts
+		newConf.Scheme = sgCfg.Scheme
 
 		params := make(map[string]string)
 		params["tenant"] = strconv.Itoa(j)
