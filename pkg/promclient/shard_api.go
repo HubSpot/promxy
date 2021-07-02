@@ -58,8 +58,12 @@ func (m *ShardAPI) Query(ctx context.Context, query string, ts time.Time) (model
 
 	for _, name := range metricNames {
 		mod := sum64(md5.Sum([]byte(name))) % 100
+		logrus.Info("Mod", mod)
+		logrus.Info("int cast", int(mod))
 		set[int(mod)] = true
 	}
+
+	logrus.Info("Set length", len(set))
 
 	childContext, childContextCancel := context.WithCancel(ctx)
 	defer childContextCancel()
@@ -127,6 +131,7 @@ func (m *ShardAPI) Query(ctx context.Context, query string, ts time.Time) (model
 				if result == nil {
 					result = ret.v
 				} else {
+					logrus.Info("Are we here merging results")
 					var err error
 					result, err = promhttputil.MergeValues(m.antiAffinity, result, ret.v)
 					if err != nil {
