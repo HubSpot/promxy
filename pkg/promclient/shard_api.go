@@ -306,6 +306,7 @@ func extractMetricNames(query string) []string {
 	for _, sel := range selectors {
 		for _, s := range sel {
 			if s.Name == "__name__" {
+				logrus.Info("Metric Name", s.Value)
 				metricNames = append(metricNames, s.Value)
 			}
 		}
